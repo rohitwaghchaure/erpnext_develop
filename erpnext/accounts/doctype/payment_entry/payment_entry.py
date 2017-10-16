@@ -297,7 +297,7 @@ class PaymentEntry(AccountsController):
 		base_party_amount = flt(self.base_total_allocated_amount) + flt(base_unallocated_amount)
 
 		if self.payment_type == "Receive":
-			self.difference_amount = base_party_amount - self.base_received_amount
+			self.difference_amount = self.base_received_amount - base_party_amount
 		elif self.payment_type == "Pay":
 			self.difference_amount = self.base_paid_amount - base_party_amount
 		else:
@@ -465,13 +465,18 @@ class PaymentEntry(AccountsController):
 				if account_currency != self.company_currency:
 					frappe.throw(_("Currency for {0} must be {1}").format(d.account, self.company_currency))
 
+				debit_amt = d.amount if self.payment_type == 'Pay' else 0
+				credit_amt = d.amount if self.payment_type == 'Receive' else 0
+
 				gl_entries.append(
 					self.get_gl_dict({
 						"account": d.account,
 						"account_currency": account_currency,
 						"against": self.party or self.paid_from,
-						"debit_in_account_currency": d.amount,
-						"debit": d.amount,
+						"debit_in_account_currency": debit_amt,
+						"debit": debit_amt,
+						"credit_in_account_currency": credit_amt,
+						"credit": credit_amt,
 						"cost_center": d.cost_center
 					})
 				)

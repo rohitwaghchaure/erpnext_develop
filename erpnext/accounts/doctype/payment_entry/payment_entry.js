@@ -677,7 +677,7 @@ frappe.ui.form.on('Payment Entry', {
 		var base_party_amount = flt(frm.doc.base_total_allocated_amount) + base_unallocated_amount;
 
 		if(frm.doc.payment_type == "Receive") {
-			difference_amount = base_party_amount - flt(frm.doc.base_received_amount);
+			difference_amount = flt(frm.doc.base_received_amount) - base_party_amount;
 		} else if (frm.doc.payment_type == "Pay") {
 			difference_amount = flt(frm.doc.base_paid_amount) - base_party_amount;
 		} else {

@@ -4,6 +4,7 @@
 from __future__ import unicode_literals
 import frappe
 from frappe import _
+from frappe.desk.reportview import build_match_conditions
 
 def execute(filters=None):
 	columns, data = [], []
@@ -27,12 +28,17 @@ def get_columns():
 def get_lead_data(filters, based_on):
 	based_on_field = frappe.scrub(based_on)
 	conditions = get_filter_conditions(filters)
-	
+
+	match_conditions = build_match_conditions("Lead")
+	cond = ""
+	if match_conditions:
+		cond = "and {0}".format(match_conditions)
+
 	lead_details = frappe.db.sql("""
 		select {based_on_field}, name
 		from `tabLead` 
-		where {based_on_field} is not null and {based_on_field} != '' {conditions} 
-	""".format(based_on_field=based_on_field, conditions=conditions), filters, as_dict=1)
+		where {based_on_field} is not null and {based_on_field} != '' {conditions} {match_cond}
+	""".format(based_on_field=based_on_field, conditions=conditions, match_cond=cond), filters, as_dict=1)
 	
 	lead_map = frappe._dict()
 	for d in lead_details:

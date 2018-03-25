@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 import frappe
 from frappe.utils import cint
 from frappe import _
+from frappe.desk.reportview import build_match_conditions
 
 def execute(filters=None):
 	if not filters: filters ={}
@@ -36,17 +37,22 @@ def get_sales_details(doctype):
 			max(so.transaction_date) as 'last_order_date',
 			DATEDIFF(CURDATE(), max(so.transaction_date)) as 'days_since_last_order'"""
 
+	match_conditions = build_match_conditions("Customer")
+	match_cond = ""
+	if match_conditions:
+		match_cond = "and {0}".format(match_conditions)
+
 	return frappe.db.sql("""select
-			cust.name,
-			cust.customer_name,
-			cust.territory,
-			cust.customer_group,
+			`tabCustomer`.name,
+			`tabCustomer`.customer_name,
+			`tabCustomer`.territory,
+			`tabCustomer`.customer_group,
 			count(distinct(so.name)) as 'num_of_order',
 			sum(base_net_total) as 'total_order_value', {0}
-		from `tabCustomer` cust, `tab{1}` so
-		where cust.name = so.customer and so.docstatus = 1
-		group by cust.name
-		order by 'days_since_last_order' desc """.format(cond, doctype), as_list=1)
+		from `tabCustomer`, `tab{1}` so
+		where `tabCustomer`.name = so.customer and so.docstatus = 1 {2}
+		group by `tabCustomer`.name
+		order by 'days_since_last_order' desc """.format(cond, doctype, match_cond), as_list=1)
 
 def get_last_sales_amt(customer, doctype):
 	cond = "posting_date"

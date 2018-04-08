@@ -34,6 +34,23 @@ erpnext.SalesFunnel = Class.extend({
 				function() { me.get_data(); }, "fa fa-refresh"),
 		};
 
+		if(frappe.user.has_role('Sales Manager')) {
+			this.elements['user'] = wrapper.page.add_field({
+				fieldtype: 'Link',
+				label: 'User',
+				options: 'User',
+				get_query: function() {
+					return {
+						query: "erpnext.selling.page.sales_funnel.sales_funnel.get_users",
+					};
+				},
+				change() {
+					me.selected_user = this.get_value();
+					me.get_data();
+				}
+			})
+		}
+
 		this.elements.no_data = $('<div class="alert alert-warning">' + __("No Data") + '</div>')
 			.toggle(false)
 			.appendTo(this.elements.layout);
@@ -72,7 +89,8 @@ erpnext.SalesFunnel = Class.extend({
 			method: "erpnext.selling.page.sales_funnel.sales_funnel.get_funnel_data",
 			args: {
 				from_date: this.options.from_date,
-				to_date: this.options.to_date
+				to_date: this.options.to_date,
+				user: me.selected_user
 			},
 			btn: btn,
 			callback: function(r) {

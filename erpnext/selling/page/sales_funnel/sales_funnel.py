@@ -8,6 +8,7 @@ from frappe import _
 
 @frappe.whitelist()
 def get_funnel_data(from_date, to_date, user=None):
+	user = user or frappe.session.user
 	match_conditions = build_match_conditions("Lead")
 	cond = ""
 	if match_conditions:
@@ -73,7 +74,25 @@ def get_funnel_data(from_date, to_date, user=None):
 	]
 
 def get_users(doctype, txt, searchfield, start, page_len, filters):
+	roles = {
+		'Administrator': ['Sales Master Manager', 'Sales Manager', 'Administrator'],
+		'System Manager': ['Sales Master Manager', 'Sales Manager', 'System Manager'],
+		'Sales Master Manager': ['Sales Manager', 'Sales Master Manager']
+	}
+
+	user_roles = frappe.db.sql_list(""" select role from `tabHas Role`
+		where parent = %s and parenttype = 'User'""", frappe.session.user)
+
+	allowed_roles = []
+	if filters.get("all_user"):
+		allowed_roles = user_roles
+	else:
+		for d in roles:
+			if d in user_roles:
+				allowed_roles = roles[d]
+
 	return frappe.db.sql(""" select distinct parent from `tabHas Role` where parenttype = 'User'
-		and role in ('Sales Master Head', 'System Manager', 'Administrator') and
+		and role in ({roles}) and
 		parent like '{txt}' order by parent limit {start}, {page_len}
-		""".format(txt=frappe.db.escape('%{0}%'.format(txt)),start=start,page_len=page_len))
+		""".format(roles = ','.join(['%s'] * len(allowed_roles)),
+		txt=frappe.db.escape('%{0}%'.format(txt)),start=start,page_len=page_len), tuple(allowed_roles))

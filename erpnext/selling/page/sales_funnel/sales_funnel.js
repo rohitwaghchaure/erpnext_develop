@@ -34,19 +34,35 @@ erpnext.SalesFunnel = Class.extend({
 				function() { me.get_data(); }, "fa fa-refresh"),
 		};
 
-		if(frappe.user.has_role('Sales Manager')) {
-			this.elements['user'] = wrapper.page.add_field({
-				fieldtype: 'Link',
-				label: 'User',
-				options: 'User',
-				get_query: function() {
-					return {
-						query: "erpnext.selling.page.sales_funnel.sales_funnel.get_users",
-					};
-				},
+		this.all_user = false;
+
+		['Administrator', 'System Manager', 'Sales Master Manger'].forEach(role => {
+			if (in_list(frappe.user_roles, role)) {
+				this.elements['user'] = wrapper.page.add_field({
+					fieldtype: 'Link',
+					label: 'User',
+					options: 'User',
+					get_query: function() {
+						return {
+							query: "erpnext.selling.page.sales_funnel.sales_funnel.get_users",
+							filters: {'all_user': me.all_user}
+						};
+					},
+					change() {
+						me.selected_user = this.get_value();
+						me.get_data();
+					}
+				})
+			}
+		});
+
+		if (frappe.user.has_role('Sales Master Manager')) {
+			this.elements['all'] = wrapper.page.add_field({
+				fieldtype: 'Check',
+				fieldname: 'all',
+				label: 'All',
 				change() {
-					me.selected_user = this.get_value();
-					me.get_data();
+					me.all_user = this.get_value();
 				}
 			})
 		}

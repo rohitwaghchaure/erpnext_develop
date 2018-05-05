@@ -3,12 +3,17 @@
 
 from __future__ import unicode_literals
 import frappe
+from frappe.utils import cint
 from frappe.desk.reportview import build_match_conditions
 from frappe import _
 
 @frappe.whitelist()
-def get_funnel_data(from_date, to_date, user=None):
-	user = user or frappe.session.user
+def get_funnel_data(from_date, to_date, user=None, all_user=0):
+	if cint(all_user) and not user:
+		user = None
+	elif not user:
+		user = frappe.session.user
+
 	match_conditions = build_match_conditions("Lead")
 	cond = ""
 	if match_conditions:

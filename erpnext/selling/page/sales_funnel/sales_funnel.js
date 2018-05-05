@@ -36,8 +36,8 @@ erpnext.SalesFunnel = Class.extend({
 
 		this.all_user = false;
 
-		['Administrator', 'System Manager', 'Sales Master Manger'].forEach(role => {
-			if (in_list(frappe.user_roles, role)) {
+		['System Manager', 'Sales Master Manger'].forEach(role => {
+			if ((in_list(frappe.user_roles, role) || user == 'Administrator') && !this.elements['user']) {
 				this.elements['user'] = wrapper.page.add_field({
 					fieldtype: 'Link',
 					label: 'User',
@@ -62,7 +62,10 @@ erpnext.SalesFunnel = Class.extend({
 				fieldname: 'all',
 				label: 'All',
 				change() {
+					me.selected_user = '';
+					me.elements['user'].$input.val('');
 					me.all_user = this.get_value();
+					me.get_data();
 				}
 			})
 		}
@@ -106,7 +109,8 @@ erpnext.SalesFunnel = Class.extend({
 			args: {
 				from_date: this.options.from_date,
 				to_date: this.options.to_date,
-				user: me.selected_user
+				user: me.selected_user,
+				all_user: me.all_user ? 1:0
 			},
 			btn: btn,
 			callback: function(r) {

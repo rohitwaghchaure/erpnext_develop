@@ -36,7 +36,7 @@ erpnext.SalesFunnel = Class.extend({
 
 		this.all_user = false;
 
-		['System Manager', 'Sales Master Manger'].forEach(role => {
+		['System Manager', 'Sales Master Manager'].forEach(role => {
 			if ((in_list(frappe.user_roles, role) || user == 'Administrator') && !this.elements['user']) {
 				this.elements['user'] = wrapper.page.add_field({
 					fieldtype: 'Link',

@@ -45,7 +45,6 @@ erpnext.SalesFunnel = Class.extend({
 					get_query: function() {
 						return {
 							query: "erpnext.selling.page.sales_funnel.sales_funnel.get_users",
-							filters: {'all_user': me.all_user}
 						};
 					},
 					change() {

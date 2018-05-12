@@ -95,9 +95,13 @@ def get_users_list(txt='', start=0, page_len=20):
 	user_roles = get_user_roles(frappe.session.user)
 
 	allowed_roles = []
-	for d in roles:
-		if d in user_roles:
-			allowed_roles = roles[d]
+	not_allowed_roles = []
+	if (frappe.session.user == 'Administrator') or ('System Manager' in user_roles):
+		allowed_roles = ['Sales Master Manager', 'Sales Manager']
+		not_allowed_roles = 'System Manager'
+	elif 'Sales Master Manager' in user_roles:
+		allowed_roles = ['Sales Manager']
+		not_allowed_roles = 'Sales Master Manager'
 
 	users =  frappe.db.sql(""" select distinct parent from `tabHas Role` where parenttype = 'User'
 		and role in ({roles}) and
@@ -107,7 +111,7 @@ def get_users_list(txt='', start=0, page_len=20):
 
 	allowed_users = []
 	for d in users:
-		if not set(get_user_roles(d[0])).intersection(set(['System Manager', 'Sales Master Manager'])):
+		if not not_allowed_roles in get_user_roles(d):
 			allowed_users.append(d)
 
 	return allowed_users

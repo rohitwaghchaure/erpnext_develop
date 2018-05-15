@@ -47,8 +47,7 @@ class LeavePeriod(Document):
 		leave_policy = get_employee_leave_policy(employee)
 		if leave_policy:
 			for leave_policy_detail in leave_policy.leave_policy_details:
-				if not frappe.db.get_value("Leave Type", leave_policy_detail.leave_type, "is_lwp"):
-					self.create_leave_allocation(employee, leave_policy_detail.leave_type, leave_policy_detail.annual_allocation)
+				self.create_leave_allocation(employee, leave_policy_detail.leave_type, leave_policy_detail.annual_allocation)
 
 	def validate_allocation_exists(self, employee):
 		leave_alloc = frappe.db.exists({

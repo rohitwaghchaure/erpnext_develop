@@ -6,7 +6,9 @@ from __future__ import unicode_literals
 import frappe
 import unittest
 import frappe.utils
+from frappe.test_runner import make_test_records
 
+test_ignore = ["Employee"]
 test_records = frappe.get_test_records('Employee')
 
 class TestEmployee(unittest.TestCase):

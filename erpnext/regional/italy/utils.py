@@ -274,12 +274,13 @@ def get_e_invoice_attachments(invoice):
 	return out
 
 def validate_address(address_name, address_context):
-	pincode, city = frappe.db.get_value("Address", address_name, ["pincode", "city"])
-	if not pincode:
-		frappe.throw(_("Please set pin code on %s Address" % address_context), title=_("E-Invoicing Information Missing"))
-	if not city:
-		frappe.throw(_("Please set city on %s Address" % address_context), title=_("E-Invoicing Information Missing"))
+	address_data = frappe.db.get_value("Address",
+		address_name, ["pincode", "city"])
 
+	if not address_data or (address_data and not address_data[0]):
+		frappe.throw(_("Please set pin code on %s Address" % address_context), title=_("E-Invoicing Information Missing"))
+	if not address_data or (address_data and not address_data[1]):
+		frappe.throw(_("Please set city on %s Address" % address_context), title=_("E-Invoicing Information Missing"))
 
 def get_unamended_name(doc):
 	attributes = ["naming_series", "amended_from"]

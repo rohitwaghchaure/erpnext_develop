@@ -218,6 +218,7 @@ doc_events = {
 	},
 	"Sales Invoice": {
 		"on_submit": ["erpnext.regional.france.utils.create_transaction_log", "erpnext.regional.italy.utils.sales_invoice_on_submit"],
+		"before_submit": "erpnext.regional.fiji.utils.sales_invoice_on_submit",
 		"on_cancel": "erpnext.regional.italy.utils.sales_invoice_on_cancel",
 		"on_trash": "erpnext.regional.check_deletion_permission"
 	},

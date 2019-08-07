@@ -1,0 +1,27 @@
+{
+ "creation": "2019-08-04 17:59:54.945796",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "vsdc_url"
+ ],
+ "fields": [
+  {
+   "fieldname": "vsdc_url",
+   "fieldtype": "Data",
+   "label": "VSDC URL"
+  }
+ ],
+ "issingle": 1,
+ "modified": "2019-08-04 18:00:05.072951",
+ "modified_by": "Administrator",
+ "module": "Regional",
+ "name": "SDC Settings",
+ "owner": "Administrator",
+ "permissions": [],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

@@ -20,6 +20,7 @@
    "fieldtype": "Section Break"
   },
   {
+   "depends_on": "eval:!doc.use_pos_in_offline_mode",
    "fieldname": "fields",
    "fieldtype": "Table",
    "label": "POS Field",
@@ -27,7 +28,7 @@
   }
  ],
  "issingle": 1,
- "modified": "2019-08-23 13:44:54.999317",
+ "modified": "2019-08-27 11:50:12.323254",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "POS Settings",

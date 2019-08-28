@@ -14,8 +14,7 @@ frappe.ui.form.on('POS Settings', {
 		if (!frm.doc.use_pos_in_oflfine_mode) {
 			frappe.model.with_doctype("Sales Invoice", () => {
 				var fields = $.map(frappe.get_doc("DocType", "Sales Invoice").fields, function(d) {
-					if (frappe.model.no_value_type.indexOf(d.fieldtype) === -1 ||
-						d.fieldtype === 'Table') {
+					if (frappe.model.no_value_type.indexOf(d.fieldtype) === -1) {
 						return { label: d.label + ' (' + d.fieldtype + ')', value: d.fieldname };
 					} else {
 						return null;

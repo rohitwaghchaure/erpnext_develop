@@ -4,6 +4,7 @@
 from __future__ import unicode_literals
 import frappe, erpnext
 from frappe import _
+from erpnext.accounts.doctype.mode_of_payment.mode_of_payment import get_mode_of_payment_account
 from frappe.model.meta import get_field_precision
 from frappe.utils import flt, get_datetime, format_datetime
 
@@ -241,6 +242,7 @@ def make_return_doc(doctype, source_name, target_doc=None):
 						'mode_of_payment': data.mode_of_payment,
 						'type': data.type,
 						'amount': -1 * paid_amount,
+						'account': get_mode_of_payment_account(data.mode_of_payment, doc.company),
 						'base_amount': -1 * base_paid_amount
 					})
 			elif doc.doctype == 'Purchase Invoice':

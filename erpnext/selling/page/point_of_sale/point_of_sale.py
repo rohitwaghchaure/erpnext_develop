@@ -164,4 +164,4 @@ def item_group_query(doctype, txt, searchfield, start, page_len, filters):
 @frappe.whitelist()
 def get_pos_fields():
 	return frappe.get_all("POS Field", fields=["label", "fieldname",
-		"fieldtype", "default_value", "reqd", "read_only", "options"], debug=1)
+		"fieldtype", "default_value", "reqd", "read_only", "options"], order_by="idx")

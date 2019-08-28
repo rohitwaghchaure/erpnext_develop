@@ -6,9 +6,11 @@ from __future__ import unicode_literals
 import frappe
 import json, io
 import pyqrcode
+from six import string_types
 from frappe.utils import now, get_datetime_str
 from erpnext.regional.italy.utils import get_company_country
 from requests_pkcs12 import get, post
+from erpnext.controllers.sales_and_purchase_return import make_return_doc
 
 def sales_invoice_on_submit(doc, method):
 	if get_company_country(doc.company) not in ["Fiji"]:
@@ -36,33 +38,40 @@ def validate_vsdc_invoice(doc):
     	pkcs12_filename=_file_doc.get_full_path(), pkcs12_password=branch_data.get("password"))
 
 	dict_response = json.loads(response.text)
+
 	if response and response.status_code == 200:
-		verification_url = get_qrcode(dict_response.get("VerificationUrl"))
-		doc.db_set("verification_url", verification_url)
-		doc.db_set("company_tin", dict_response.get("TIN"))
-		doc.db_set("tax_items", json.dumps(dict_response.get("TaxItems")))
-		doc.db_set("fiscal_address", dict_response.get("Address"))
-		doc.db_set("district", dict_response.get("District"))
-		doc.db_set("sdc_time", get_datetime_str(dict_response.get("DT")))
-		doc.db_set("sdc_invoice_no", dict_response.get("IN"))
-		doc.db_set("invoice_counter", dict_response.get("IC"))
+		doc.update({
+			'verification_url': get_qrcode(dict_response.get("VerificationUrl")),
+			'company_tin': dict_response.get("TIN"),
+			'tax_items': json.dumps(dict_response.get("TaxItems")),
+			'fiscal_address': dict_response.get("Address"),
+			'district': dict_response.get("District"),
+			'sdc_time': get_datetime_str(dict_response.get("DT")),
+			'sdc_invoice_no': dict_response.get("IN"),
+			'invoice_counter': dict_response.get("IC"),
+			'business_name': dict_response.get("BusinessName")
+		})
+
+		if doc.inv_ref_no:
+			doc.db_set("inv_ref_no", doc.inv_ref_no)
 
 	create_sdc_log(doc, args, dict_response, response)
+	return doc
 
 def prepare_args_for_request(doc, branch_data):
 	items = []
 
 	taxes = []
 	if doc.taxes:
-		taxes = [d.account_head for d in doc.taxes]
+		taxes = [d.get("account_head") for d in doc.taxes]
 
 	for d in doc.items:
 		args = {
 			"Name": d.item_name,
-			"Quantity": d.qty,
+			"Quantity": abs(d.qty),
 			"UnitPrice": d.rate,
-			"Discount": d.discount_amount,
-			"TotalAmount": d.amount
+			"Discount": abs(d.discount_amount),
+			"TotalAmount": abs(d.amount)
 		}
 
 		labels = []
@@ -73,7 +82,9 @@ def prepare_args_for_request(doc, branch_data):
 			item_tax_dict = json.loads(d.item_tax_rate)
 			for account_head in item_tax_dict:
 				if account_head in taxes:
-					labels.append(frappe.db.get_value("Account", account_head, "tax_label"))
+					label = frappe.db.get_value("Account", account_head, "tax_label")
+					d.tax_label = label
+					labels.append(label)
 
 		if labels:
 			args["Labels"] = labels
@@ -81,14 +92,14 @@ def prepare_args_for_request(doc, branch_data):
 		items.append(args)
 
 	invoice_args = {
-		"DateAndTimeOfIssue": doc.creation,
+		"DateAndTimeOfIssue": get_datetime_str(doc.creation),
 		"Cashier": doc.cashier_tin,
 		"BD": "",
 		"BuyerCostCenterId": "",
-		"IT": "Normal",
-		"TT": "Sale",
+		"IT": doc.fiji_invoice_type,
+		"TT": doc.fiji_transaction_type,
 		"PaymentType": "Cash",
-		"InvoiceNumber": doc.name,
+		"InvoiceNumber": doc.return_against if doc.is_return else doc.name,
 		"PAC": branch_data.get("pac"),
 		"Options":{
 			"OmitQRCodeGen": "1",
@@ -100,6 +111,9 @@ def prepare_args_for_request(doc, branch_data):
 	if branch_data.get("name"):
 		invoice_args["TIN"] = branch_data.get("tin")
 		invoice_args["LocationName"] = branch_data.get("name")
+
+	if doc.is_return or doc.fiji_invoice_type == 'Copy':
+		invoice_args["ReferentDocumentNumber"] = doc.sdc_invoice_no
 
 	return invoice_args
 
@@ -119,6 +133,51 @@ def get_qrcode(value):
 	url.svg(buffer)
 
 	svg_data = buffer.getvalue()
-	svg_data = svg_data.replace('class="pyqrcode"', 'class="pyqrcode" data-qrcode-value= "%s"' % value)
+	# svg_data = svg_data.replace('class="pyqrcode"', 'class="pyqrcode" data-qrcode-value= "%s"' % value)
 
 	return svg_data
+
+@frappe.whitelist()
+def get_sdc_invoice_details(invoice_type, transaction_type, sdc_invoice_no):
+	name = frappe.get_cached_value("Sales Invoice",
+		{'sdc_invoice_no': sdc_invoice_no}, 'name')
+
+	if not name:
+		frappe.throw(_("The SDC invoice number {0} does not exist").format(sdc_invoice_no))
+
+	if transaction_type == "Refund":
+		new_doc = make_return_doc("Sales Invoice", name)
+		new_doc.verification_url = invoice_type
+		new_doc.inv_ref_no = sdc_invoice_no
+	else:
+		new_doc = frappe.get_doc("Sales Invoice", name)
+
+	new_doc.fiji_transaction_type = transaction_type
+	new_doc.fiji_invoice_type = invoice_type
+
+	return new_doc.as_dict()
+
+@frappe.whitelist()
+def copy_invoice(invoice_type, transaction_type, name, ref_no):
+	if invoice_type != 'Copy':
+		frappe.throw(_("Invoice type should be copy"))
+
+	doc = frappe.get_doc("Sales Invoice", name)
+	doc.update({
+		"fiji_invoice_type": invoice_type,
+		"fiji_transaction_type": transaction_type,
+		"inv_ref_no": ref_no
+	})
+
+	return validate_vsdc_invoice(doc)
+
+@frappe.whitelist()
+def submit_sales_return_entry(doc):
+	if isinstance(doc, string_types):
+		doc = json.loads(doc)
+
+	s_doc = frappe.get_doc(doc)
+	s_doc.status = 'Return'
+	s_doc.submit()
+
+	return s_doc.as_dict()

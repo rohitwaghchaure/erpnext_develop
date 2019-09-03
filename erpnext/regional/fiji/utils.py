@@ -55,6 +55,9 @@ def validate_vsdc_invoice(doc):
 		if doc.inv_ref_no:
 			doc.db_set("inv_ref_no", doc.inv_ref_no)
 
+		if doc.docstatus == 1:
+			doc.db_update()
+
 	create_sdc_log(doc, args, dict_response, response)
 	return doc
 

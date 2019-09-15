@@ -423,7 +423,7 @@ erpnext.pos.PointOfSale = class PointOfSale {
 			frm: this.frm,
 			events: {
 				submit_form: () => {
-					if (this.frm.doc.is_return) {
+					if (this.cart.regional_pos && this.frm.doc.fiji_transaction_type === 'Refund') {
 						this.frm.doc.docstatus = 1;
 						this.toggle_editing();
 						this.cart.regional_pos.submit_invoice();

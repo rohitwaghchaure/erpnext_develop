@@ -10,7 +10,7 @@ from six import string_types
 from frappe.utils import now, get_datetime_str
 from erpnext.regional.italy.utils import get_company_country
 from requests_pkcs12 import get, post
-from erpnext.controllers.sales_and_purchase_return import make_return_doc
+# from erpnext.controllers.sales_and_purchase_return import make_return_doc
 
 def sales_invoice_on_submit(doc, method):
 	if get_company_country(doc.company) not in ["Fiji"]:
@@ -18,7 +18,7 @@ def sales_invoice_on_submit(doc, method):
 
 	validate_vsdc_invoice(doc)
 
-def validate_vsdc_invoice(doc):
+def validate_vsdc_invoice(doc, update_db=False):
 	if not(doc.is_pos and doc.pos_profile): return
 
 	branch = frappe.db.get_value("POS Profile", doc.pos_profile, "location")
@@ -55,7 +55,7 @@ def validate_vsdc_invoice(doc):
 		if doc.inv_ref_no:
 			doc.db_set("inv_ref_no", doc.inv_ref_no)
 
-		if doc.docstatus == 1:
+		if update_db and doc.docstatus == 1:
 			doc.db_update()
 
 	create_sdc_log(doc, args, dict_response, response)
@@ -136,9 +136,28 @@ def get_qrcode(value):
 	url.svg(buffer)
 
 	svg_data = buffer.getvalue()
-	# svg_data = svg_data.replace('class="pyqrcode"', 'class="pyqrcode" data-qrcode-value= "%s"' % value)
 
 	return svg_data
+
+def update_doc(doc):
+	doc.is_return = 1
+	doc.return_against = frappe.get_cached_value("Sales Invoice",
+		{'sdc_invoice_no': doc.sdc_invoice_no}, 'name')
+
+	for d in doc.items:
+		d.qty = -1 * d.qty
+		d.stock_qty = -1 * d.stock_qty
+		d.amount = -1 * d.amount
+		d.base_amount = -1 * d.base_amount
+		d.base_net_amount = -1 * d.base_net_amount
+
+	doc.paid_amount = 0.0
+	for d in doc.payments:
+		d.amount = -1 * d.amount
+		d.base_amount = -1 * d.base_amount
+		doc.paid_amount += d.amount
+
+	doc.run_method("calculate_taxes_and_totals")
 
 @frappe.whitelist()
 def get_sdc_invoice_details(invoice_type, transaction_type, sdc_invoice_no):
@@ -148,17 +167,47 @@ def get_sdc_invoice_details(invoice_type, transaction_type, sdc_invoice_no):
 	if not name:
 		frappe.throw(_("The SDC invoice number {0} does not exist").format(sdc_invoice_no))
 
+	# if transaction_type == "Refund":
+	# 	new_doc = make_return_doc("Sales Invoice", name)
+	# 	new_doc.verification_url = invoice_type
+	# 	new_doc.inv_ref_no = sdc_invoice_no
+	# else:
+	doc = frappe.get_doc("Sales Invoice", name)
 	if transaction_type == "Refund":
-		new_doc = make_return_doc("Sales Invoice", name)
-		new_doc.verification_url = invoice_type
-		new_doc.inv_ref_no = sdc_invoice_no
-	else:
-		new_doc = frappe.get_doc("Sales Invoice", name)
+		doc = make_return_doc("Sales Invoice", name)
+		doc.inv_ref_no = sdc_invoice_no
 
-	new_doc.fiji_transaction_type = transaction_type
-	new_doc.fiji_invoice_type = invoice_type
+	doc.fiji_transaction_type = transaction_type
+	doc.fiji_invoice_type = invoice_type
 
-	return new_doc.as_dict()
+	return doc.as_dict()
+
+def make_return_doc(doctype, source_name, target_doc=None):
+	from frappe.model.mapper import get_mapped_doc
+	doclist = get_mapped_doc(doctype, source_name,	{
+		doctype: {
+			"doctype": doctype,
+
+			"validation": {
+				"docstatus": ["=", 1],
+			}
+		},
+		doctype +" Item": {
+			"doctype": doctype + " Item",
+			"field_map": {
+				"serial_no": "serial_no",
+				"batch_no": "batch_no"
+			},
+		},
+		"Payment Schedule": {
+			"doctype": "Payment Schedule",
+		},
+		"Sales Invoice Payment": {
+			"doctype": "Sales Invoice Payment",
+		}
+	}, target_doc)
+
+	return doclist
 
 @frappe.whitelist()
 def copy_invoice(invoice_type, transaction_type, name, ref_no):
@@ -172,7 +221,7 @@ def copy_invoice(invoice_type, transaction_type, name, ref_no):
 		"inv_ref_no": ref_no
 	})
 
-	return validate_vsdc_invoice(doc)
+	return validate_vsdc_invoice(doc, update_db=True)
 
 @frappe.whitelist()
 def submit_sales_return_entry(doc):
@@ -181,6 +230,7 @@ def submit_sales_return_entry(doc):
 
 	s_doc = frappe.get_doc(doc)
 	s_doc.status = 'Return'
+	update_doc(s_doc)
 	s_doc.submit()
 
 	return s_doc.as_dict()

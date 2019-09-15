@@ -33,7 +33,7 @@ def make_custom_fields(update=True):
 			dict(fieldname='fiscal_invoice', label='Fiscal Invoice Info', fieldtype='Section Break',
 				insert_after='cost_center', depends_on='is_pos'),
 			dict(fieldname='fiji_invoice_type', label='Invoice Type', fieldtype='Select',
-				insert_after='fiscal_invoice', options='\nNormal\nCopy\nProForma\nTraining', default='Normal'),
+				insert_after='fiscal_invoice', options='\nNormal\nCopy', default='Normal'),
 			dict(fieldname='fiji_transaction_type', label='Transaction Type', fieldtype='Select',
 				insert_after='fiji_invoice_type', options='\nRefund\nSale', default='Sale'),
 			dict(fieldname='cashier_tin', label='Cashier TIN', fieldtype='Data',
@@ -60,6 +60,8 @@ def make_custom_fields(update=True):
 				insert_after='sdc_invoice_no', read_only=1),
 			dict(fieldname='verification_url', label='Verification URL', fieldtype='Qrcode',
 				insert_after='invoice_counter', read_only=1),
+			dict(fieldname='buyer_cost_center', label='Buyer Cost Center',
+				fieldtype='Data', insert_after='tax_id', read_only=1, fetch_from="customer.buyer_cost_center")
 		],
 		'Sales Invoice Item': [
 			dict(fieldname='gtin', label='GTIN', fieldtype='Data',
@@ -84,12 +86,17 @@ def make_custom_fields(update=True):
 		'Account': [
 			dict(fieldname='tax_label', label='Tax Label', depends_on="eval:doc.account_type=='Tax'",
 				fieldtype='Select', options='\nA\nB\nC\nE\nF\nP\nN', insert_after='tax_rate')
+		],
+		'Customer': [
+			dict(fieldname='buyer_cost_center', label='Buyer Cost Center',
+				fieldtype='Data', insert_after='tax_id')
 		]
 	}
 	create_custom_fields(custom_fields, update=update)
 
 def create_property_setters():
-	make_property_setter("Customer", 'tax_id', 'label', 'TIN Number', 'Data')
+	make_property_setter("Customer", 'tax_id', 'label', 'Buyer TIN', 'Data')
+	make_property_setter("Sales Invoice", 'tax_id', 'label', 'Buyer TIN', 'Data')
 
 def add_permissions():
 	add_permission("SDC Settings", 'Accounts Manager', 0)

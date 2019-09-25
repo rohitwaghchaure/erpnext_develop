@@ -845,6 +845,10 @@ class POSCart {
 			})
 		}
 
+		if(this.custom_pos_fields && this.sdc_invoice_no) {
+			this["sdc_invoice_no"].$wrapper.toggle();
+		}
+
 		this.wrapper.find('.pos-fields').toggle(false);
 		this.wrapper.find('.octicon-triangle-down').toggle(true);
 		this.wrapper.find('.octicon-triangle-up').toggle(false);

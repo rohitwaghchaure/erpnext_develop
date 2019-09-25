@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import frappe
 import json, io
 import pyqrcode
+from frappe import _
 from six import string_types
 from frappe.utils import now, get_datetime_str
 from erpnext.regional.italy.utils import get_company_country
@@ -22,12 +23,22 @@ def validate_vsdc_invoice(doc, update_db=False):
 	if not(doc.is_pos and doc.pos_profile): return
 
 	branch = frappe.db.get_value("POS Profile", doc.pos_profile, "location")
+
+	if not branch:
+		frappe.throw(_("Select location in the pos profile {0}").format(doc.pos_profile))
+
 	branch_data = frappe.db.get_value("Branch", branch, 
 		["attach_certificate as path", "password", "pac", "tin", "name"], as_dict=1)
+
+	if branch_data and not branch_data.path:
+		frappe.throw(_("Certificate not found for the location {0}").format(branch_data.name))
 
 	args = prepare_args_for_request(doc, branch_data)
 
 	sdc_settings_doc = frappe.get_doc("SDC Settings", "SDC Settings")
+
+	if not sdc_settings_doc.vsdc_url:
+		frappe.throw(_("VSDC url is not set in the sdc settings"))
 
 	file_name = frappe.db.get_value("File", {'file_url': branch_data.path}, "name")
 	_file_doc = frappe.get_doc("File", file_name)
@@ -39,9 +50,11 @@ def validate_vsdc_invoice(doc, update_db=False):
 
 	dict_response = json.loads(response.text)
 
+	parse_verification_url = ''
 	if response and response.status_code == 200:
+		parse_verification_url = get_qrcode(dict_response.get("VerificationUrl"))
 		doc.update({
-			'verification_url': get_qrcode(dict_response.get("VerificationUrl")),
+			'verification_url': parse_verification_url,
 			'company_tin': dict_response.get("TIN"),
 			'tax_items': json.dumps(dict_response.get("TaxItems")),
 			'fiscal_address': dict_response.get("Address"),
@@ -55,10 +68,13 @@ def validate_vsdc_invoice(doc, update_db=False):
 		if doc.inv_ref_no:
 			doc.db_set("inv_ref_no", doc.inv_ref_no)
 
-		if update_db and doc.docstatus == 1:
+		if doc.docstatus == 1:
 			doc.db_update()
+	else:
+		frappe.throw(_("Error in connecting to the VSDC"))
 
-	create_sdc_log(doc, args, dict_response, response)
+	create_sdc_log(doc, args, dict_response, response, parse_verification_url)
+	doc.set_status(update=True)
 	return doc
 
 def prepare_args_for_request(doc, branch_data):
@@ -86,7 +102,10 @@ def prepare_args_for_request(doc, branch_data):
 			for account_head in item_tax_dict:
 				if account_head in taxes:
 					label = frappe.db.get_value("Account", account_head, "tax_label")
-					d.tax_label = label
+					if not d.tax_label:
+						d.tax_label = label
+					else:
+						d.tax_label = ',' + label
 					labels.append(label)
 
 		if labels:
@@ -120,20 +139,20 @@ def prepare_args_for_request(doc, branch_data):
 
 	return invoice_args
 
-def create_sdc_log(doc, requsted_data, dict_response, response):
+def create_sdc_log(doc, requsted_data, dict_response, response, verification_url=None):
 	frappe.get_doc({
 		"doctype": "SDC Log",
 		"docname": doc.name,
 		"requested_data": json.dumps(requsted_data),
 		"response": response.text,
-		"verification_url": dict_response.get("VerificationUrl")
+		"verification_url": verification_url
 	}).insert()
 
 def get_qrcode(value):
 	url = pyqrcode.create(value)
 	url.svg('uca.svg', scale=100) 
 	buffer = io.BytesIO()
-	url.svg(buffer)
+	url.svg(buffer, scale=2)
 
 	svg_data = buffer.getvalue()
 
@@ -153,8 +172,8 @@ def update_doc(doc):
 
 	doc.paid_amount = 0.0
 	for d in doc.payments:
+		d.base_amount = -1 * (d.base_amount or d.amount)
 		d.amount = -1 * d.amount
-		d.base_amount = -1 * d.base_amount
 		doc.paid_amount += d.amount
 
 	doc.run_method("calculate_taxes_and_totals")
@@ -173,7 +192,7 @@ def get_sdc_invoice_details(invoice_type, transaction_type, sdc_invoice_no):
 	# 	new_doc.inv_ref_no = sdc_invoice_no
 	# else:
 	doc = frappe.get_doc("Sales Invoice", name)
-	if transaction_type == "Refund":
+	if transaction_type == "Refund" and invoice_type == 'Normal':
 		doc = make_return_doc("Sales Invoice", name)
 		doc.inv_ref_no = sdc_invoice_no
 
@@ -229,7 +248,6 @@ def submit_sales_return_entry(doc):
 		doc = json.loads(doc)
 
 	s_doc = frappe.get_doc(doc)
-	s_doc.status = 'Return'
 	update_doc(s_doc)
 	s_doc.submit()
 

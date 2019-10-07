@@ -150,9 +150,9 @@ def create_sdc_log(doc, requsted_data, dict_response, response, verification_url
 
 def get_qrcode(value):
 	url = pyqrcode.create(value)
-	url.svg('uca.svg', scale=100) 
+	url.svg('uca.svg') 
 	buffer = io.BytesIO()
-	url.svg(buffer, scale=2)
+	url.svg(buffer, scale=1.8)
 
 	svg_data = buffer.getvalue()
 

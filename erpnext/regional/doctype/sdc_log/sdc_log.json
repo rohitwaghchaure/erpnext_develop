@@ -22,17 +22,20 @@
   {
    "fieldname": "requested_data",
    "fieldtype": "Code",
-   "label": "Requested Data"
+   "label": "Requested Data",
+   "read_only": 1
   },
   {
    "fieldname": "response",
    "fieldtype": "Code",
-   "label": "Response"
+   "label": "Response",
+   "read_only": 1
   },
   {
    "fieldname": "verification_url",
    "fieldtype": "Qrcode",
-   "label": "Verification URL"
+   "label": "Verification URL",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_2",
@@ -48,8 +51,8 @@
   }
  ],
  "in_create": 1,
- "modified": "2019-08-05 23:03:18.688920",
- "modified_by": "rohit@erpnext.com",
+ "modified": "2019-10-16 10:59:05.624872",
+ "modified_by": "Administrator",
  "module": "Regional",
  "name": "SDC Log",
  "owner": "rohit@erpnext.com",

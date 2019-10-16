@@ -729,10 +729,13 @@ class POSCart {
 				<div class="customer-field">
 				</div>
 				<div class="pos-field-section" style="margin-top:-9px; margin-bottom:6px">
-					<i class="octicon octicon-triangle-down" style="color:#cacaca; cursor: pointer"></i>
+					<a class="h6 uppercase more-fields-section">
+						${__("More Information")}
+					</a>
+					<i class="octicon octicon-chevron-down pos-fields-octicon collapse-indicator"
+						style="color:#cacaca; cursor: pointer"></i>
 					<div class="pos-fields">
 					</div>
-					<i class="octicon octicon-triangle-up" style="color:#cacaca; cursor: pointer"></i>
 				</div>
 				<div class="cart-wrapper">
 					<div class="list-item-table">
@@ -850,8 +853,7 @@ class POSCart {
 		}
 
 		this.wrapper.find('.pos-fields').toggle(false);
-		this.wrapper.find('.octicon-triangle-down').toggle(true);
-		this.wrapper.find('.octicon-triangle-up').toggle(false);
+		this.wrapper.find('.pos-fields-octicon').toggle(true);
 	}
 
 	get_grand_total() {
@@ -993,20 +995,11 @@ class POSCart {
 	}
 
 	make_pos_fields() {
-		this.wrapper.find('.octicon-triangle-down').click(() => {
-			this.wrapper.find('.pos-fields').toggle(true);
-			this.wrapper.find('.octicon-triangle-down').toggle(false);
-			this.wrapper.find('.octicon-triangle-up').toggle(true);
+		this.wrapper.find('.pos-fields-octicon, .more-fields-section').click(() => {
+			this.wrapper.find('.pos-fields').toggle();
+			this.wrapper.find(".pos-fields-octicon").toggleClass('octicon-chevron-down').toggleClass('octicon-chevron-up');
 		});
-
-		this.wrapper.find('.octicon-triangle-up').click(() => {
-			this.wrapper.find('.pos-fields').toggle(false);
-			this.wrapper.find('.octicon-triangle-down').toggle(true);
-			this.wrapper.find('.octicon-triangle-up').toggle(false);
-		});
-
 		this.wrapper.find('.pos-fields').toggle(false);
-		this.wrapper.find('.octicon-triangle-up').toggle(false);
 
 		return new Promise(res => {
 			frappe.call({

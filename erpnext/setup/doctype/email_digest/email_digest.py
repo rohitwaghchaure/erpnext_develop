@@ -4,8 +4,8 @@
 from __future__ import unicode_literals
 import frappe
 from frappe import _
-from frappe.utils import fmt_money, formatdate, format_time, now_datetime, \
-	get_url_to_form, get_url_to_list, flt, get_link_to_report
+from frappe.utils import (fmt_money, formatdate, format_time, now_datetime,
+	get_url_to_form, get_url_to_list, flt, get_link_to_report, today)
 from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 from frappe.core.doctype.user.user import STANDARD_USERS
@@ -721,7 +721,8 @@ class EmailDigest(Document):
 
 		# decide from date based on email digest frequency
 		if self.frequency == "Daily":
-			self.past_from_date = self.past_to_date = self.future_from_date - relativedelta(days = 1)
+			self.future_from_date = self.future_to_date = self.from_date + relativedelta(days = 1)
+			self.past_from_date = self.past_to_date = self.from_date
 
 		elif self.frequency == "Weekly":
 			self.past_from_date = self.future_from_date - relativedelta(weeks=1)

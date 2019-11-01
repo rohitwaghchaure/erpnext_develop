@@ -187,6 +187,8 @@ def get_benefit_component_amount(employee, start_date, end_date, salary_componen
 	})
 
 	current_benefit_amount = 0.0
+	benefit_amount = 0.0
+	
 	component_max_benefit, depends_on_payment_days = frappe.db.get_value("Salary Component",
 		salary_component, ["max_benefit_amount", "depends_on_payment_days"])
 

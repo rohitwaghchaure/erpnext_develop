@@ -400,8 +400,8 @@ class JournalEntry(AccountsController):
 			d.debit_in_account_currency = flt(d.debit_in_account_currency, d.precision("debit_in_account_currency"))
 			d.credit_in_account_currency = flt(d.credit_in_account_currency, d.precision("credit_in_account_currency"))
 
-			d.debit = flt(d.debit_in_account_currency * flt(d.exchange_rate), d.precision("debit"))
-			d.credit = flt(d.credit_in_account_currency * flt(d.exchange_rate), d.precision("credit"))
+			d.debit = d.debit_in_account_currency * flt(d.exchange_rate)
+			d.credit = d.credit_in_account_currency * flt(d.exchange_rate)
 
 	def set_exchange_rate(self):
 		for d in self.get("accounts"):
@@ -505,8 +505,8 @@ class JournalEntry(AccountsController):
 						"due_date": self.due_date,
 						"party": d.party,
 						"against": d.against_account,
-						"debit": flt(d.debit, d.precision("debit")),
-						"credit": flt(d.credit, d.precision("credit")),
+						"debit": d.debit,
+						"credit": d.credit,
 						"account_currency": d.account_currency,
 						"debit_in_account_currency": flt(d.debit_in_account_currency, d.precision("debit_in_account_currency")),
 						"credit_in_account_currency": flt(d.credit_in_account_currency, d.precision("credit_in_account_currency")),

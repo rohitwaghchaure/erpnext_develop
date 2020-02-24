@@ -23,7 +23,7 @@ class BankReconciliation(Document):
 
 		account_cond = ""
 		if self.bank_account_no:
-			account_cond = " and t2.bank_account_no = {0}".format(frappe.db.escape(self.bank_account_no))
+			account_cond = " and t2.bank_account = {0}".format(frappe.db.escape(self.bank_account_no))
 
 		journal_entries = frappe.db.sql("""
 			select

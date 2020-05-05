@@ -266,7 +266,7 @@ def get_batches(item_code, warehouse, qty=1, throw=False, serial_no=None):
 	cond = ''
 	if serial_no:
 		batch = frappe.get_all("Serial No",
-			fields = ["distinct batch_no"],
+			fields = ["distinct batch_no as batch_no"],
 			filters= {
 				"item_code": item_code,
 				"warehouse": warehouse,
@@ -274,7 +274,7 @@ def get_batches(item_code, warehouse, qty=1, throw=False, serial_no=None):
 			}
 		)
 
-		if batch and len(batch) > 1:
+		if not batch or (batch and len(batch) > 1):
 			return []
 
 		cond = " and `tabBatch`.name = %s" %(frappe.db.escape(batch[0].batch_no))

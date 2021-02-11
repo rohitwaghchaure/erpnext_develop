@@ -40,6 +40,7 @@
   "base_rate",
   "base_amount",
   "pricing_rules",
+  "stock_uom_rate",
   "is_free_item",
   "section_break_22",
   "net_rate",
@@ -790,12 +791,20 @@
    "no_copy": 1,
    "print_hide": 1,
    "read_only": 1
+  },
+  {
+   "depends_on": "eval: doc.uom != doc.stock_uom",
+   "fieldname": "stock_uom_rate",
+   "fieldtype": "Currency",
+   "label": "Rate of Stock UOM",
+   "options": "currency",
+   "read_only": 1
   }
  ],
  "idx": 1,
  "istable": 1,
  "links": [],
- "modified": "2020-12-26 17:20:36.415791",
+ "modified": "2021-01-30 21:43:21.488258",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Purchase Invoice Item",

@@ -733,15 +733,14 @@
    "fieldname": "stock_uom_rate",
    "fieldtype": "Currency",
    "label": "Rate of Stock UOM",
-   "options": "currency",
-   "read_only": 1
+   "options": "currency"
   }
  ],
  "idx": 1,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2021-01-30 21:44:41.816974",
+ "modified": "2021-02-16 12:38:33.071520",
  "modified_by": "Administrator",
  "module": "Buying",
  "name": "Purchase Order Item",

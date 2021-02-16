@@ -888,14 +888,13 @@
    "fieldname": "stock_uom_rate",
    "fieldtype": "Currency",
    "label": "Rate of Stock UOM",
-   "options": "currency",
-   "read_only": 1
+   "options": "currency"
   }
  ],
  "idx": 1,
  "istable": 1,
  "links": [],
- "modified": "2021-01-30 21:44:06.918515",
+ "modified": "2021-02-16 12:38:57.646612",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Purchase Receipt Item",

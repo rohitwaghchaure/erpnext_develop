@@ -453,6 +453,7 @@ def make_stock_entry(source_name, target_doc=None):
 				"name": "job_card_item"
 			},
 			"postprocess": update_item,
+			"condition": lambda doc: doc.required_qty > 0
 		}
 	}, target_doc, set_missing_values)
 

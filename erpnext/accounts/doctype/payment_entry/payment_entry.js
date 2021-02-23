@@ -281,7 +281,9 @@ frappe.ui.form.on('Payment Entry', {
 		let party_types = Object.keys(frappe.boot.party_account_types);
 		if(frm.doc.party_type && !party_types.includes(frm.doc.party_type)){
 			frm.set_value("party_type", "");
-			frappe.throw(__("Party can only be one of "+ party_types.join(", ")));
+			frappe.throw(
+				__("Party can only be one of {0}", [party_types.join(", ")])
+			);
 		}
 
 		frm.set_query("party", function() {
@@ -625,13 +627,13 @@ frappe.ui.form.on('Payment Entry', {
 			let to_field = fields[key][1];
 
 			if (filters[from_field] && !filters[to_field]) {
-				frappe.throw(__("Error: {0} is mandatory field",
-					[to_field.replace(/_/g, " ")]
-				));
+				frappe.throw(
+					__("Error: {0} is mandatory field", [to_field.replace(/_/g, " ")])
+				);
 			} else if (filters[from_field] && filters[from_field] > filters[to_field]) {
-				frappe.throw(__("{0}: {1} must be less than {2}",
-					[key, from_field.replace(/_/g, " "), to_field.replace(/_/g, " ")]
-				));
+				frappe.throw(
+					__("{0}: {1} must be less than {2}", [key, from_field.replace(/_/g, " "), to_field.replace(/_/g, " ")])
+				);
 			}
 		}
 	},
@@ -680,6 +682,8 @@ frappe.ui.form.on('Payment Entry', {
 						c.total_amount = d.invoice_amount;
 						c.outstanding_amount = d.outstanding_amount;
 						c.bill_no = d.bill_no;
+						c.payment_term = d.payment_term;
+						c.allocated_amount = d.allocated_amount;
 
 						if(!in_list(["Sales Order", "Purchase Order", "Expense Claim", "Fees"], d.voucher_type)) {
 							if(flt(d.outstanding_amount) > 0)
@@ -760,12 +764,15 @@ frappe.ui.form.on('Payment Entry', {
 		} else if (in_list(["Customer", "Supplier"], frm.doc.party_type)) {
 			if(paid_amount > total_negative_outstanding) {
 				if(total_negative_outstanding == 0) {
-					frappe.msgprint(__("Cannot {0} {1} {2} without any negative outstanding invoice",
-						[frm.doc.payment_type,
-							(frm.doc.party_type=="Customer" ? "to" : "from"), frm.doc.party_type]));
+					frappe.msgprint(
+						__("Cannot {0} {1} {2} without any negative outstanding invoice", [frm.doc.payment_type,
+							(frm.doc.party_type=="Customer" ? "to" : "from"), frm.doc.party_type])
+					);
 					return false
 				} else {
-					frappe.msgprint(__("Paid Amount cannot be greater than total negative outstanding amount {0}", [total_negative_outstanding]));
+					frappe.msgprint(
+						__("Paid Amount cannot be greater than total negative outstanding amount {0}", [total_negative_outstanding])
+					);
 					return false;
 				}
 			} else {
@@ -777,10 +784,13 @@ frappe.ui.form.on('Payment Entry', {
 		}
 
 		$.each(frm.doc.references || [], function(i, row) {
-			row.allocated_amount = 0 //If allocate payment amount checkbox is unchecked, set zero to allocate amount
-			if(frappe.flags.allocate_payment_amount != 0){
-				if(row.outstanding_amount > 0 && allocated_positive_outstanding > 0) {
-					if(row.outstanding_amount >= allocated_positive_outstanding) {
+			if (frappe.flags.allocate_payment_amount == 0) {
+				//If allocate payment amount checkbox is unchecked, set zero to allocate amount
+				row.allocated_amount = 0;
+
+			} else if (frappe.flags.allocate_payment_amount != 0 && !row.allocated_amount) {
+				if (row.outstanding_amount > 0 && allocated_positive_outstanding > 0) {
+					if (row.outstanding_amount >= allocated_positive_outstanding) {
 						row.allocated_amount = allocated_positive_outstanding;
 					} else {
 						row.allocated_amount = row.outstanding_amount;
@@ -788,9 +798,11 @@ frappe.ui.form.on('Payment Entry', {
 
 					allocated_positive_outstanding -= flt(row.allocated_amount);
 				} else if (row.outstanding_amount < 0 && allocated_negative_outstanding) {
-					if(Math.abs(row.outstanding_amount) >= allocated_negative_outstanding)
+					if (Math.abs(row.outstanding_amount) >= allocated_negative_outstanding) {
 						row.allocated_amount = -1*allocated_negative_outstanding;
-					else row.allocated_amount = row.outstanding_amount;
+					} else {
+						row.allocated_amount = row.outstanding_amount;
+					};
 
 					allocated_negative_outstanding -= Math.abs(flt(row.allocated_amount));
 				}

@@ -50,6 +50,23 @@ erpnext.buying.BuyingController = erpnext.TransactionController.extend({
 		/* eslint-enable */
 	},
 
+	conversion_factor: function(doc, cdt, cdn) {
+		if(frappe.meta.get_docfield(cdt, "stock_qty", cdn)) {
+			var item = frappe.get_doc(cdt, cdn);
+			frappe.model.round_floats_in(item, ["qty", "conversion_factor"]);
+			item.stock_qty = flt(item.qty * item.conversion_factor, precision("stock_qty", item));
+			refresh_field("stock_qty", item.name, item.parentfield);
+			this.toggle_conversion_factor(item);
+
+			if(doc.doctype != "Material Request") {
+				item.total_weight = flt(item.stock_qty * item.weight_per_unit);
+				refresh_field("total_weight", item.name, item.parentfield);
+				this.calculate_net_weight();
+			}
+			this.calculate_stock_uom_rate(doc, cdt, cdn);
+		}
+	},
+
 	setup_queries: function(doc, cdt, cdn) {
 		var me = this;
 

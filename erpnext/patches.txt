@@ -753,4 +753,4 @@ erpnext.patches.v13_0.add_naming_series_to_old_projects # 1-02-2021
 erpnext.patches.v13_0.item_reposting_for_incorrect_sl_and_gl
 erpnext.patches.v12_0.add_state_code_for_ladakh
 erpnext.patches.v13_0.update_vehicle_no_reqd_condition
-erpnext.patches.v13_0.make_non_standard_user_type #12-03-2020
+erpnext.patches.v13_0.make_non_standard_user_type #15-03-2020

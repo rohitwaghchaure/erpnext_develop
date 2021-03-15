@@ -184,13 +184,13 @@ def get_user_types_data():
 			'doctypes': {
 				'Salary Slip': ['read'],
 				'Employee': ['read', 'write'],
-				'Timesheet': ['read', 'write', 'create'],
-				'Expense Claim': ['read', 'write', 'create'],
-				'Leave Application': ['read', 'write', 'create'],
-				'Attendance Request': ['read', 'write', 'create'],
-				'Compensatory Leave Request': ['read', 'write', 'create'],
-				'Employee Tax Exemption Declaration': ['read', 'write', 'create'],
-				'Employee Tax Exemption Proof Submission': ['read', 'write', 'create'],
+				'Expense Claim': ['read', 'write', 'create', 'delete'],
+				'Leave Application': ['read', 'write', 'create', 'delete'],
+				'Attendance Request': ['read', 'write', 'create', 'delete'],
+				'Compensatory Leave Request': ['read', 'write', 'create', 'delete'],
+				'Employee Tax Exemption Declaration': ['read', 'write', 'create', 'delete'],
+				'Employee Tax Exemption Proof Submission': ['read', 'write', 'create', 'delete'],
+				'Timesheet': ['read', 'write', 'create', 'delete', 'submit', 'cancel', 'amend']
 			}
 		}
 	}

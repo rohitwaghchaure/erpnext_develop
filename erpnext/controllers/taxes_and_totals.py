@@ -335,9 +335,15 @@ class calculate_taxes_and_totals(object):
 		elif tax.charge_type == "On Item Quantity":
 			current_tax_amount = tax_rate * item.qty
 
+		current_tax_amount = self.get_final_current_tax_amount(tax, current_tax_amount)
 		self.set_item_wise_tax(item, tax, tax_rate, current_tax_amount)
 
 		return current_tax_amount
+
+	def get_final_current_tax_amount(self, tax, current_tax_amount):
+		# Some countries need individual tax components to be rounded
+		# Handeled via regional doctypess
+		return round(current_tax_amount, 2)
 
 	def set_item_wise_tax(self, item, tax, tax_rate, current_tax_amount):
 		# store tax breakup for each item

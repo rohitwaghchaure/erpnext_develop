@@ -371,7 +371,15 @@ erpnext.taxes_and_totals = erpnext.payments.extend({
 		} else if (tax.charge_type == "On Item Quantity") {
 			current_tax_amount = tax_rate * item.qty;
 		}
+
+		current_tax_amount = this.get_final_tax_amount(tax, current_tax_amount);
 		this.set_item_wise_tax(item, tax, tax_rate, current_tax_amount);
+
+		return current_tax_amount;
+	},
+
+	get_final_tax_amount: function(tax, current_tax_amount) {
+		current_tax_amount = current_tax_amount.toFixed(2);
 
 		return current_tax_amount;
 	},

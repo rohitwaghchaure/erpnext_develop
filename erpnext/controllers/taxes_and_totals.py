@@ -340,10 +340,14 @@ class calculate_taxes_and_totals(object):
 
 		return current_tax_amount
 
+	def truncate(self, n, decimals=0):
+		multiplier = 10 ** decimals
+		return int(n * multiplier) / multiplier
+
 	def get_final_current_tax_amount(self, tax, current_tax_amount):
 		# Some countries need individual tax components to be rounded
 		# Handeled via regional doctypess
-		return round(current_tax_amount, 2)
+		return self.truncate(current_tax_amount, 2)
 
 	def set_item_wise_tax(self, item, tax, tax_rate, current_tax_amount):
 		# store tax breakup for each item

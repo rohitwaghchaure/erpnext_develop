@@ -11,6 +11,8 @@ from erpnext.controllers.accounts_controller import validate_conversion_rate, \
 from erpnext.stock.get_item_details import _get_item_tax_template
 from erpnext.accounts.doctype.pricing_rule.utils import get_applied_pricing_rules
 from erpnext.accounts.doctype.journal_entry.journal_entry import get_exchange_rate
+from decimal import Decimal
+import decimal
 
 class calculate_taxes_and_totals(object):
 	def __init__(self, doc):
@@ -349,7 +351,9 @@ class calculate_taxes_and_totals(object):
 		# Handeled via regional doctypess
 		if self.doc.get('truncate_tax'):
 			return self.truncate(current_tax_amount, 2)
-		return round(current_tax_amount, 2)
+		decimal.getcontext().rounding = decimal.ROUND_HALF_UP
+		r = Decimal("{0}".format(current_tax_amount)).quantize(Decimal("1.00"))
+		return float(r)
 
 	def set_item_wise_tax(self, item, tax, tax_rate, current_tax_amount):
 		# store tax breakup for each item

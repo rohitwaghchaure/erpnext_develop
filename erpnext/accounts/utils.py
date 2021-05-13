@@ -974,6 +974,7 @@ def compare_existing_and_expected_gle(existing_gle, expected_gle, precision):
 	return matched
 
 def check_if_stock_and_account_balance_synced(posting_date, company, voucher_type=None, voucher_no=None):
+	return
 	if not cint(erpnext.is_perpetual_inventory_enabled(company)):
 		return
 

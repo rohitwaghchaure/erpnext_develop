@@ -2,32 +2,18 @@
 # License: GNU General Public License v3. See license.txt
 
 import copy
-from urllib.parse import quote
 
 import frappe
 from frappe import _
 from frappe.utils.nestedset import NestedSet
 from frappe.website.utils import clear_cache
-from frappe.website.website_generator import WebsiteGenerator
 
 
-class ItemGroup(NestedSet, WebsiteGenerator):
-	nsm_parent_field = "parent_item_group"
-	website = frappe._dict(
-		condition_field="show_in_website",
-		template="templates/generators/item_group.html",
-		no_cache=1,
-		no_breadcrumbs=1,
-	)
-
+class ItemGroup(NestedSet):
 	def validate(self):
-		super(ItemGroup, self).validate()
-
 		if not self.parent_item_group and not frappe.flags.in_test:
 			if frappe.db.exists("Item Group", _("All Item Groups")):
 				self.parent_item_group = _("All Item Groups")
-
-		self.make_route()
 		self.validate_item_group_defaults()
 		self.check_item_tax()
 
@@ -52,24 +38,8 @@ class ItemGroup(NestedSet, WebsiteGenerator):
 		self.validate_one_root()
 		self.delete_child_item_groups_key()
 
-	def make_route(self):
-		"""Make website route"""
-		if not self.route:
-			self.route = ""
-			if self.parent_item_group:
-				parent_item_group = frappe.get_doc("Item Group", self.parent_item_group)
-
-				# make parent route only if not root
-				if parent_item_group.parent_item_group and parent_item_group.route:
-					self.route = parent_item_group.route + "/"
-
-			self.route += self.scrub(self.item_group_name)
-
-			return self.route
-
 	def on_trash(self):
 		NestedSet.on_trash(self, allow_root_deletion=True)
-		WebsiteGenerator.on_trash(self)
 		self.delete_child_item_groups_key()
 
 	def delete_child_item_groups_key(self):
@@ -106,17 +76,6 @@ def get_child_item_groups(item_group_name):
 	]
 
 	return child_item_groups or {}
-
-
-def get_item_for_list_in_html(context):
-	# add missing absolute link in files
-	# user may forget it during upload
-	if (context.get("website_image") or "").startswith("files/"):
-		context["website_image"] = "/" + quote(context["website_image"])
-
-	products_template = "templates/includes/products_as_list.html"
-
-	return frappe.get_template(products_template).render(context)
 
 
 def get_parent_item_groups(item_group_name, from_item=False):

@@ -199,31 +199,21 @@ class JobCard(Document):
 		overlap = False
 
 		# Check overlap exists or not between the overlapping time logs with the current Job Card
-		for row in time_logs:
-			count = 1
-			for next_row in time_logs:
-				if row.name == next_row.name:
-					continue
-
-				if (
-					(
-						get_datetime(next_row.from_time) >= get_datetime(row.from_time)
-						and get_datetime(next_row.from_time) <= get_datetime(row.to_time)
-					)
-					or (
-						get_datetime(next_row.to_time) >= get_datetime(row.from_time)
-						and get_datetime(next_row.to_time) <= get_datetime(row.to_time)
-					)
-					or (
-						get_datetime(next_row.from_time) <= get_datetime(row.from_time)
-						and get_datetime(next_row.to_time) >= get_datetime(row.to_time)
-					)
-				):
-					count += 1
-
-			if count > production_capacity:
-				return True
-
+		time_logs = sorted(time_logs, key=lambda x: x.get("from_time"))
+		alloted_capacity ={1: time_logs[0]['to_time']}
+		sequential_job_card_found = False
+		for i in range(1,len(time_logs)):
+			
+			for key in alloted_capacity.keys():
+				if alloted_capacity[key] <= time_logs[i]['from_time']:
+					alloted_capacity[key] = time_logs[i]['to_time']
+					sequential_job_card_found = True
+					break
+			if not sequential_job_card_found :
+				key = key + 1
+				alloted_capacity[key] = time_logs[i]['to_time']
+		if len(alloted_capacity) >= production_capacity :
+			return True
 		return overlap
 
 	def get_time_logs(self, args, doctype, check_next_available_slot=False):

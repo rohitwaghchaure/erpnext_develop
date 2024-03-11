@@ -405,6 +405,9 @@ class Item(Document):
 				)
 
 	def check_for_active_boms(self):
+		if self.disabled:
+			return
+
 		if self.default_bom:
 			bom_item = frappe.db.get_value("BOM", self.default_bom, "item")
 			if bom_item not in (self.name, self.variant_of):

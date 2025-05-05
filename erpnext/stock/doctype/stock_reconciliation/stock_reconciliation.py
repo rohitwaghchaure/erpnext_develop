@@ -532,13 +532,18 @@ class StockReconciliation(StockController):
 		for row_num, row in enumerate(self.items):
 			# find duplicates
 			key = [row.item_code, row.warehouse]
-			for field in ["serial_no", "batch_no"]:
+			for field in ["serial_no", "batch_no", "serial_and_batch_bundle"]:
 				if row.get(field):
 					key.append(row.get(field))
 
 			if key in item_warehouse_combinations:
 				self.validation_messages.append(
-					_get_msg(row_num, _("Same item and warehouse combination already entered."))
+					_get_msg(
+						row_num,
+						_(
+							"The combination of item '{0}' and the warehouse '{1}' have been added multiple times in the items table. Please ensure that non-serialized / non-batch items are added in the table with each warehouse combination only once."
+						).format(key[0], key[1]),
+					)
 				)
 			else:
 				item_warehouse_combinations.append(key)
@@ -726,12 +731,6 @@ class StockReconciliation(StockController):
 				)
 
 			self.make_sl_entries(sl_entries, allow_negative_stock=allow_negative_stock)
-		elif self.docstatus == 1:
-			frappe.throw(
-				_(
-					"No stock ledger entries were created. Please set the quantity or valuation rate for the items properly and try again."
-				)
-			)
 
 	def make_adjustment_entry(self, row, sl_entries):
 		from erpnext.stock.stock_ledger import get_stock_value_difference

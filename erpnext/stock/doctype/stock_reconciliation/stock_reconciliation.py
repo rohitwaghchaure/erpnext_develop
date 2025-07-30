@@ -514,6 +514,7 @@ class StockReconciliation(StockController):
 				inventory_dimensions_dict=inventory_dimensions_dict,
 				row=item,
 				company=self.company,
+				is_backdated_entry=self.set_posting_time,
 			)
 
 			if not item_dict.get("qty") and not item.qty and not item.valuation_rate and not item.current_qty:
@@ -1417,6 +1418,7 @@ def get_stock_balance_for(
 	inventory_dimensions_dict=None,
 	row=None,
 	company=None,
+	is_backdated_entry=False,
 ):
 	frappe.has_permission("Stock Reconciliation", "write", throw=True)
 
@@ -1457,6 +1459,7 @@ def get_stock_balance_for(
 		with_valuation_rate=with_valuation_rate,
 		with_serial_no=has_serial_no,
 		inventory_dimensions_dict=inventory_dimensions_dict,
+		is_backdated_entry=is_backdated_entry,
 	)
 
 	if has_serial_no:

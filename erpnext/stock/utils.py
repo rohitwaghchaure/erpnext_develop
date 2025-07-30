@@ -102,6 +102,7 @@ def get_stock_balance(
 	with_valuation_rate=False,
 	with_serial_no=False,
 	inventory_dimensions_dict=None,
+	is_backdated_entry=False,
 ):
 	"""Returns stock balance quantity at given warehouse on given posting date or current date.
 
@@ -133,19 +134,31 @@ def get_stock_balance(
 
 	if with_valuation_rate:
 		if with_serial_no:
-			serial_no_details = get_available_serial_nos(
-				frappe._dict(
-					{
+			serial_nos = ""
+
+			if not is_backdated_entry:
+				serial_no_details = frappe.get_all(
+					"Serial No",
+					filters={
 						"item_code": item_code,
 						"warehouse": warehouse,
-						"posting_date": posting_date,
-						"posting_time": posting_time,
-						"ignore_warehouse": 1,
-					}
+						"status": "Active",
+					},
+					fields=["name as serial_no"],
 				)
-			)
+			else:
+				serial_no_details = get_available_serial_nos(
+					frappe._dict(
+						{
+							"item_code": item_code,
+							"warehouse": warehouse,
+							"posting_date": posting_date,
+							"posting_time": posting_time,
+							"ignore_warehouse": 1,
+						}
+					)
+				)
 
-			serial_nos = ""
 			if serial_no_details:
 				serial_nos = "\n".join(d.serial_no for d in serial_no_details)
 

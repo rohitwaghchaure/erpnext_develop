@@ -29,7 +29,7 @@ frappe.ui.form.on("Company", {
 
 		frm.set_query("default_operating_cost_account", function (doc) {
 			return {
-				filters: { company: doc.name, root_type: "Expense" },
+				filters: { company: doc.name, root_type: "Expense", is_group: 0 },
 			};
 		});
 

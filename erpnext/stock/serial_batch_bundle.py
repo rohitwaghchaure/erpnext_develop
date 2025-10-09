@@ -209,7 +209,30 @@ class SerialBatchBundle:
 				elif sn_doc.has_batch_no and len(sn_doc.entries) == 1:
 					values_to_update["batch_no"] = sn_doc.entries[0].batch_no
 
-			frappe.db.set_value(self.child_doctype, self.sle.voucher_detail_no, values_to_update)
+			child_doctype = self.child_doctype
+			if self.sle.voucher_type in ["Delivery Note", "Sales Invoice"] and self.sle.voucher_detail_no:
+				if (
+					frappe.db.get_value(
+						self.sle.voucher_type + " Item", self.sle.voucher_detail_no, "item_code"
+					)
+					!= self.sle.item_code
+				):
+					child_doctype = "Packed Item"
+
+			if child_doctype == "Packed Item":
+				name = frappe.db.get_value(
+					"Packed Item",
+					{
+						"parent_detail_docname": sn_doc.voucher_detail_no,
+						"item_code": self.sle.item_code,
+						"serial_and_batch_bundle": ("is", "not set"),
+					},
+					"name",
+				)
+
+				frappe.db.set_value(child_doctype, name, values_to_update)
+			else:
+				frappe.db.set_value(self.child_doctype, self.sle.voucher_detail_no, values_to_update)
 
 	@property
 	def child_doctype(self):

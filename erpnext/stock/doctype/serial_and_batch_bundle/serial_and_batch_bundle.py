@@ -116,15 +116,12 @@ class SerialandBatchBundle(Document):
 			return
 
 		self.allow_existing_serial_nos()
-<<<<<<< HEAD
-		if not self.flags.ignore_validate_serial_batch or frappe.flags.in_test:
-			self.validate_serial_nos_duplicate()
-=======
 		if self.docstatus == 1:
 			if not self.flags.ignore_validate_serial_batch or frappe.in_test:
 				self.validate_serial_nos_duplicate()
 
 			self.check_future_entries_exists()
+
 		elif (
 			self.has_serial_no
 			and self.type_of_transaction == "Outward"
@@ -132,7 +129,6 @@ class SerialandBatchBundle(Document):
 			and self.voucher_no
 		):
 			self.validate_serial_no_status()
->>>>>>> 20320c4a6c (perf: SABB taking time to save the record)
 
 		self.set_is_outward()
 		self.calculate_total_qty()

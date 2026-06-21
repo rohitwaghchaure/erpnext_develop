@@ -1392,16 +1392,22 @@ class TestPurchaseReceipt(ERPNextTestSuite):
 		pr.submit()
 
 		gl_entries = get_gl_entries("Purchase Receipt", pr.name, skip_cancelled=True, as_dict=True)
-		gl_map = {row.account: row for row in gl_entries}
+		# Sum per account - the same account can appear in multiple GL rows (e.g. the stock account
+		# is debited once per item), so aggregate rather than keeping only the last row.
+		gl_map = {}
+		for row in gl_entries:
+			acc = gl_map.setdefault(row.account, {"debit": 0.0, "credit": 0.0})
+			acc["debit"] += row.debit
+			acc["credit"] += row.credit
 
 		warehouse_account = get_warehouse_account_map(company)
 		stock_account = warehouse_account[warehouse]["account"]
 
 		# Stock asset = 200 (goods) + 20 (stock items' share of the valuation tax)
-		self.assertAlmostEqual(gl_map[stock_account].debit, 220.0, places=2)
-		self.assertAlmostEqual(gl_map["Stock Received But Not Billed - TCP1"].credit, 200.0, places=2)
+		self.assertAlmostEqual(gl_map[stock_account]["debit"], 220.0, places=2)
+		self.assertAlmostEqual(gl_map["Stock Received But Not Billed - TCP1"]["credit"], 200.0, places=2)
 		# Only the stock items' share (20) is capitalized; the service item's 10 is excluded
-		self.assertAlmostEqual(gl_map["_Test Account Shipping Charges - TCP1"].credit, 20.0, places=2)
+		self.assertAlmostEqual(gl_map["_Test Account Shipping Charges - TCP1"]["credit"], 20.0, places=2)
 
 	def test_full_actual_charge_capitalized_on_stock_items_only(self):
 		"""When "Allocate Full Amount to Stock Items" is checked (the default), an actual
@@ -1460,16 +1466,22 @@ class TestPurchaseReceipt(ERPNextTestSuite):
 		pr.submit()
 
 		gl_entries = get_gl_entries("Purchase Receipt", pr.name, skip_cancelled=True, as_dict=True)
-		gl_map = {row.account: row for row in gl_entries}
+		# Sum per account - the same account can appear in multiple GL rows (e.g. the stock account
+		# is debited once per item), so aggregate rather than keeping only the last row.
+		gl_map = {}
+		for row in gl_entries:
+			acc = gl_map.setdefault(row.account, {"debit": 0.0, "credit": 0.0})
+			acc["debit"] += row.debit
+			acc["credit"] += row.credit
 
 		warehouse_account = get_warehouse_account_map(company)
 		stock_account = warehouse_account[warehouse]["account"]
 
 		# Stock asset = 200 (goods) + 30 (the entire freight charge)
-		self.assertAlmostEqual(gl_map[stock_account].debit, 230.0, places=2)
-		self.assertAlmostEqual(gl_map["Stock Received But Not Billed - TCP1"].credit, 200.0, places=2)
+		self.assertAlmostEqual(gl_map[stock_account]["debit"], 230.0, places=2)
+		self.assertAlmostEqual(gl_map["Stock Received But Not Billed - TCP1"]["credit"], 200.0, places=2)
 		# The whole freight charge (30) is capitalized
-		self.assertAlmostEqual(gl_map["_Test Account Shipping Charges - TCP1"].credit, 30.0, places=2)
+		self.assertAlmostEqual(gl_map["_Test Account Shipping Charges - TCP1"]["credit"], 30.0, places=2)
 
 	def test_actual_charge_distribution_with_both_allocation_modes(self):
 		"""Both allocation modes can coexist on the same document, and each item's share from
@@ -1542,18 +1554,24 @@ class TestPurchaseReceipt(ERPNextTestSuite):
 		pr.submit()
 
 		gl_entries = get_gl_entries("Purchase Receipt", pr.name, skip_cancelled=True, as_dict=True)
-		gl_map = {row.account: row for row in gl_entries}
+		# Sum per account - the same account can appear in multiple GL rows (e.g. the stock account
+		# is debited once per item), so aggregate rather than keeping only the last row.
+		gl_map = {}
+		for row in gl_entries:
+			acc = gl_map.setdefault(row.account, {"debit": 0.0, "credit": 0.0})
+			acc["debit"] += row.debit
+			acc["credit"] += row.credit
 
 		warehouse_account = get_warehouse_account_map(company)
 		stock_account = warehouse_account[warehouse]["account"]
 
 		# Stock asset = 200 (goods) + 20 (stock share of the spread charge) + 20 (the full freight)
-		self.assertAlmostEqual(gl_map[stock_account].debit, 240.0, places=2)
-		self.assertAlmostEqual(gl_map["Stock Received But Not Billed - TCP1"].credit, 200.0, places=2)
+		self.assertAlmostEqual(gl_map[stock_account]["debit"], 240.0, places=2)
+		self.assertAlmostEqual(gl_map["Stock Received But Not Billed - TCP1"]["credit"], 200.0, places=2)
 		# Only the stock items' 20 share of the spread charge is capitalized (service 10 excluded)
-		self.assertAlmostEqual(gl_map["_Test Account Shipping Charges - TCP1"].credit, 20.0, places=2)
+		self.assertAlmostEqual(gl_map["_Test Account Shipping Charges - TCP1"]["credit"], 20.0, places=2)
 		# The whole freight charge (20) is capitalized
-		self.assertAlmostEqual(gl_map["_Test Account Customs Duty - TCP1"].credit, 20.0, places=2)
+		self.assertAlmostEqual(gl_map["_Test Account Customs Duty - TCP1"]["credit"], 20.0, places=2)
 
 	def test_multiple_actual_charges_per_item_matches_gl_per_account(self):
 		"""With multiple "Actual" valuation charges over unevenly valued stock items, each charge
@@ -1616,17 +1634,23 @@ class TestPurchaseReceipt(ERPNextTestSuite):
 		pr.submit()
 
 		gl_entries = get_gl_entries("Purchase Receipt", pr.name, skip_cancelled=True, as_dict=True)
-		gl_map = {row.account: row for row in gl_entries}
+		# Sum per account - the same account can appear in multiple GL rows (e.g. the stock account
+		# is debited once per item), so aggregate rather than keeping only the last row.
+		gl_map = {}
+		for row in gl_entries:
+			acc = gl_map.setdefault(row.account, {"debit": 0.0, "credit": 0.0})
+			acc["debit"] += row.debit
+			acc["credit"] += row.credit
 
 		warehouse_account = get_warehouse_account_map(company)
 		stock_account = warehouse_account[warehouse]["account"]
 
 		# Stock asset = 300 (goods) + 10 + 10 (both freight charges fully capitalized)
-		self.assertAlmostEqual(gl_map[stock_account].debit, 320.0, places=2)
-		self.assertAlmostEqual(gl_map["Stock Received But Not Billed - TCP1"].credit, 300.0, places=2)
+		self.assertAlmostEqual(gl_map[stock_account]["debit"], 320.0, places=2)
+		self.assertAlmostEqual(gl_map["Stock Received But Not Billed - TCP1"]["credit"], 300.0, places=2)
 		# Each charge is credited in full to its own account
-		self.assertAlmostEqual(gl_map["_Test Account Shipping Charges - TCP1"].credit, 10.0, places=2)
-		self.assertAlmostEqual(gl_map["_Test Account Customs Duty - TCP1"].credit, 10.0, places=2)
+		self.assertAlmostEqual(gl_map["_Test Account Shipping Charges - TCP1"]["credit"], 10.0, places=2)
+		self.assertAlmostEqual(gl_map["_Test Account Customs Duty - TCP1"]["credit"], 10.0, places=2)
 
 	def test_po_to_pi_and_po_to_pr_worflow_full(self):
 		"""Test following behaviour:

@@ -104,6 +104,44 @@ class TestSerialNo(ERPNextTestSuite):
 			doc.set(fieldname, value)
 			self.assertRaises(SerialNoCannotCannotChangeError, doc.save)
 
+	def test_auto_created_serials_skip_existing_numbers(self):
+		from erpnext.stock.serial_batch_bundle import get_serial_nos_from_bundle
+
+		series_prefix = f"SNSKIP{random_string(5)}-"
+		item_code = make_item(
+			properties={"has_serial_no": 1, "is_stock_item": 1, "serial_no_series": f"{series_prefix}.#####"}
+		).name
+		frappe.get_doc(
+			{
+				"doctype": "Serial No",
+				"item_code": item_code,
+				"serial_no": f"{series_prefix}00002",
+				"company": "_Test Company",
+			}
+		).insert()
+
+		receipt = make_purchase_receipt(item_code=item_code, qty=3)
+
+		serial_nos = get_serial_nos_from_bundle(receipt.items[0].serial_and_batch_bundle)
+		numbers = sorted(frappe.get_all("Serial No", filters={"name": ("in", serial_nos)}, pluck="serial_no"))
+		self.assertEqual(numbers, [f"{series_prefix}0000{i}" for i in (1, 3, 4)])
+
+	def test_prefix_only_series_creates_distinct_serials(self):
+		series_prefix = f"SNPRE{random_string(5)}-"
+		item_code = make_item(
+			properties={"has_serial_no": 1, "is_stock_item": 1, "serial_no_series": series_prefix}
+		).name
+
+		receipts = [make_purchase_receipt(item_code=item_code, qty=1) for _i in range(2)]
+
+		numbers = [
+			frappe.db.get_value(
+				"Serial No", get_serial_nos_from_bundle(r.items[0].serial_and_batch_bundle)[0], "serial_no"
+			)
+			for r in receipts
+		]
+		self.assertEqual(numbers, [f"{series_prefix}00001", f"{series_prefix}00002"])
+
 	def test_inter_company_transfer(self):
 		se = make_serialized_item(self, target_warehouse="_Test Warehouse - _TC")
 		serial_nos = get_serial_nos_from_bundle(se.get("items")[0].serial_and_batch_bundle)

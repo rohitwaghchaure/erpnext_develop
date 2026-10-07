@@ -1534,6 +1534,24 @@ class SerialBatchCreation:
 			)
 		)
 
+	def get_next_serial_numbers(self, count, current_value, series):
+		serial_numbers = []
+		while len(serial_numbers) < count:
+			candidates = []
+			for _i in range(count - len(serial_numbers)):
+				current_value += 1
+				candidates.append(make_serial_number_from_series(series, current_value))
+
+			existing = {
+				cstr(d.serial_no).strip().upper()
+				for d in SerialBatchIdentity("Serial No").get_records(
+					self.item_code, candidates, ["serial_no"]
+				)
+			}
+			serial_numbers.extend(sn for sn in candidates if sn.strip().upper() not in existing)
+
+		return serial_numbers, current_value
+
 	def get_auto_created_serial_nos(self):
 		sr_nos = []
 		serial_nos_details = []
@@ -1551,10 +1569,6 @@ class SerialBatchCreation:
 			voucher_type = self.get("voucher_type")
 
 		obj = NamingSeries(self.serial_no_series)
-		current_value = obj.get_current_value()
-
-		def get_series(partial_series, digits):
-			return f"{current_value:0{digits}d}"
 
 		posting_date = frappe.db.get_value(
 			voucher_type,
@@ -1562,11 +1576,10 @@ class SerialBatchCreation:
 			"posting_date",
 		)
 
-		serial_ids = SerialBatchIdentity("Serial No").get_new_names(abs(cint(self.actual_qty)))
-		for serial_id in serial_ids:
-			current_value += 1
-			serial_no = parse_naming_series(self.serial_no_series, number_generator=get_series)
-
+		qty = abs(cint(self.actual_qty))
+		serial_numbers, current_value = self.get_next_serial_numbers(qty, obj.get_current_value(), obj.series)
+		serial_ids = SerialBatchIdentity("Serial No").get_new_names(qty)
+		for serial_id, serial_no in zip(serial_ids, serial_numbers, strict=True):
 			sr_nos.append(serial_id)
 			serial_nos_details.append(
 				(
@@ -1624,6 +1637,13 @@ class SerialBatchCreation:
 		obj.update_counter(current_value)
 
 		return sr_nos
+
+
+def make_serial_number_from_series(series, value):
+	def get_series(partial_series, digits):
+		return f"{value:0{digits}d}"
+
+	return parse_naming_series(series, number_generator=get_series)
 
 
 def get_serial_or_batch_items(items):

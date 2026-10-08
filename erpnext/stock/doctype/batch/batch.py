@@ -12,6 +12,7 @@ from frappe.model.naming import make_autoname, revert_series_if_last
 from frappe.utils import cint, cstr, flt, get_link_to_form
 from frappe.utils.data import DateTimeLikeObject, add_days
 
+import erpnext
 from erpnext.stock.serial_batch_identity import SerialBatchIdentity
 
 
@@ -186,11 +187,27 @@ class Batch(Document):
 
 		frappe.msgprint(_("Batch Qty updated to {0}").format(batch_qty), alert=True)
 
+	def get_company(self):
+		if self.flags.company:
+			return self.flags.company
+
+		if (
+			self.reference_doctype
+			and self.reference_name
+			and frappe.get_meta(self.reference_doctype).has_field("company")
+		):
+			if company := frappe.db.get_value(self.reference_doctype, self.reference_name, "company"):
+				return company
+
+		return erpnext.get_default_company()
+
 	def set_batchwise_valuation(self):
 		from erpnext.stock.utils import get_valuation_method
 
 		if self.is_new():
-			if get_valuation_method(self.item) == "Moving Average" and frappe.get_single_value(
+			if get_valuation_method(
+				self.item, self.get_company()
+			) == "Moving Average" and frappe.get_single_value(
 				"Stock Settings", "do_not_use_batchwise_valuation"
 			):
 				self.use_batchwise_valuation = 0
@@ -329,10 +346,11 @@ def get_batches_by_oldest(item_code: str, warehouse: str):
 @frappe.whitelist(methods=["POST"])
 def split_batch(batch_no: str, item_code: str, warehouse: str, qty: float, new_batch_id: str | None = None):
 	"""Split the batch into a new batch"""
-	batch = frappe.get_doc(doctype="Batch", item=item_code, batch_id=new_batch_id).insert()
-	qty = flt(qty)
-
 	company = frappe.db.get_value("Warehouse", warehouse, "company")
+	batch = frappe.get_doc(doctype="Batch", item=item_code, batch_id=new_batch_id)
+	batch.flags.company = company
+	batch.insert()
+	qty = flt(qty)
 
 	from_bundle_id = make_batch_bundle(
 		item_code=item_code,

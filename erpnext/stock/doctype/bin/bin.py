@@ -55,7 +55,7 @@ class Bin(Document):
 
 		from erpnext.stock.utils import get_valuation_method
 
-		if get_valuation_method(self.item_code) == "Standard Cost":
+		if get_valuation_method(self.item_code, self.company) == "Standard Cost":
 			from erpnext.stock.doctype.item_standard_cost.item_standard_cost import get_item_standard_rate
 
 			self.stock_value = flt(self.actual_qty) * flt(
@@ -296,7 +296,7 @@ def update_qty_from_sle(bin_name, args):
 	# refreshed by a repost. Keep it in step with the balance at the standard rate.
 	from erpnext.stock.utils import get_valuation_method
 
-	if get_valuation_method(args.get("item_code")) == "Standard Cost":
+	if get_valuation_method(args.get("item_code"), args.get("company")) == "Standard Cost":
 		from erpnext.stock.doctype.item_standard_cost.item_standard_cost import get_item_standard_rate
 
 		bin_values["stock_value"] = flt(actual_qty) * flt(

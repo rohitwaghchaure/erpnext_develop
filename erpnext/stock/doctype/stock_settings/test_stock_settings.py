@@ -170,3 +170,43 @@ class TestStockSettings(ERPNextTestSuite):
 		)
 
 		self.assertEqual(frappe.db.get_value("Batch", new_batch, "use_batchwise_valuation"), 1)
+
+	def test_auto_price_update_keeps_other_customer_price(self):
+		from erpnext.stock.doctype.item.test_item import make_item
+		from erpnext.stock.get_item_details import insert_item_price
+
+		item = make_item(properties={"is_stock_item": 1})
+		customer_price = frappe.get_doc(
+			{
+				"doctype": "Item Price",
+				"price_list": "Standard Selling",
+				"item_code": item.name,
+				"customer": "_Test Customer",
+				"price_list_rate": 900,
+			}
+		).insert()
+
+		insert_item_price(
+			frappe._dict(
+				price_list="Standard Selling",
+				item_code=item.name,
+				currency=customer_price.currency,
+				stock_uom=item.stock_uom,
+				conversion_factor=1,
+				rate=1500,
+				customer="_Test Customer 1",
+			)
+		)
+
+		self.assertEqual(frappe.db.get_value("Item Price", customer_price.name, "price_list_rate"), 900)
+		self.assertTrue(
+			frappe.db.exists(
+				"Item Price",
+				{
+					"item_code": item.name,
+					"price_list": "Standard Selling",
+					"customer": ("is", "not set"),
+					"price_list_rate": 1500,
+				},
+			)
+		)
